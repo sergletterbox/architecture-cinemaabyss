@@ -5,7 +5,7 @@
 1. Спроектируйте to be архитектуру КиноБездны, разделив всю систему на отдельные домены и организовав интеграционное взаимодействие и единую точку вызова сервисов.
 Результат представьте в виде контейнерной диаграммы в нотации С4.
 Добавьте ссылку на файл в этот шаблон
-[diagrams\Containers.puml](Containers)
+[https://github.com/sergletterbox/architecture-cinemaabyss/tree/cinema/diagrams/Containers.puml](Containers)
 
 # Задание 2
 
@@ -57,7 +57,9 @@
     - Добавьте в docker-compose новый сервис, kafka там уже есть
 
 Необходимые тесты для проверки этого API вызываются при запуске npm run test:local из папки tests/postman 
-Приложите скриншот тестов и скриншот состояния топиков Kafka из UI http://localhost:8090 
+Приложите скриншот тестов и скриншот состояния топиков Kafka из UI http://localhost:8090
+![Task2_Topics.png](https://github.com/sergletterbox/architecture-cinemaabyss/tree/cinema/screenshots/Task2_Topics.png)
+![Task2_Tests.png](https://github.com/sergletterbox/architecture-cinemaabyss/tree/cinema/screenshots/Task2_Tests.png)
 
 # Задание 3
 
@@ -351,6 +353,10 @@ minikube tunnel
 Потом вызовите 
 https://cinemaabyss.example.com/api/movies
 и приложите скриншот развертывания helm и вывода https://cinemaabyss.example.com/api/movies
+
+![Task4_MovieScreenshot](https://github.com/sergletterbox/architecture-cinemaabyss/tree/cinema/screenshots/Task4_MovieScreenshot.png)
+![Task4_HelmScreenshot](https://github.com/sergletterbox/architecture-cinemaabyss/tree/cinema/screenshots/Task4_HelmScreenshot.png)
+
 
 ## Удаляем все
 
