@@ -38,13 +38,13 @@ spec:
               path: /api/events/health
               port: 8082
             initialDelaySeconds: 30
-            periodSeconds: 10
+            periodSeconds: 30
           readinessProbe:
             httpGet:
               path: /api/events/ready
               port: 8082
-            initialDelaySeconds: 5
-            periodSeconds: 5
+            initialDelaySeconds: 30
+            periodSeconds: 30
       restartPolicy: Always
 ---
 apiVersion: v1
