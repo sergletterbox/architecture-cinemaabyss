@@ -1,86 +1,58 @@
 package com.smarthome.temperatureapi.controller;
 
+import com.smarthome.temperatureapi.RequestLoggingFilter;
+import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import java.util.List;
-import java.util.Arrays;
+import org.springframework.web.client.RestTemplate;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api")
 public class ApiController {
+    private static final Logger logger = LoggerFactory.getLogger(RequestLoggingFilter.class);
+
+    private final RestTemplate restTemplate = new RestTemplate();;
+
+    @Value("${movies.migration.percent}")
+    private int migrationPercent;
+
+    @Value("${monolith.url}")
+    private String monolithUrl;
+
+    @Value("${movies.service.url}")
+    private String moviesUrl;
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void doSomethingAfterStartup() {
+        logger.info("migrationPercent={}", migrationPercent);
+        logger.info("monolithUrl={}", monolithUrl);
+        logger.info("moviesUrl={}", moviesUrl);
+    }
 
     @GetMapping("/users")
-    public List<User> getUsers() {
-        // Sample data - replace with actual service call
-        return Arrays.asList(
-                new User(1L, "John Doe", "john.doe@example.com"),
-                new User(2L, "Jane Smith", "jane.smith@example.com"),
-                new User(3L, "Bob Johnson", "bob.johnson@example.com")
-        );
+    public String getUsers(HttpServletResponse response) throws IOException {
+        String result = restTemplate.getForObject(monolithUrl + "/api/users", String.class);
+        logger.info("result = {}", result);
+        return result;
     }
 
     @GetMapping("/movies")
-    public List<Movie> getMovies() {
-        // Sample data - replace with actual service call
-        return Arrays.asList(
-                new Movie(1L, "The Shawshank Redemption", "Drama", 1994),
-                new Movie(2L, "The Godfather", "Crime", 1972),
-                new Movie(3L, "The Dark Knight", "Action", 2008)
-        );
-    }
-
-    // Inner classes for data models
-    public static class User {
-        private Long id;
-        private String name;
-        private String email;
-
-        public User() {}
-
-        public User(Long id, String name, String email) {
-            this.id = id;
-            this.name = name;
-            this.email = email;
-        }
-
-        // Getters and setters
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
-
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
-    }
-
-    public static class Movie {
-        private Long id;
-        private String title;
-        private String genre;
-        private Integer year;
-
-        public Movie() {}
-
-        public Movie(Long id, String title, String genre, Integer year) {
-            this.id = id;
-            this.title = title;
-            this.genre = genre;
-            this.year = year;
-        }
-
-        // Getters and setters
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
-
-        public String getTitle() { return title; }
-        public void setTitle(String title) { this.title = title; }
-
-        public String getGenre() { return genre; }
-        public void setGenre(String genre) { this.genre = genre; }
-
-        public Integer getYear() { return year; }
-        public void setYear(Integer year) { this.year = year; }
+    public String getMovies(HttpServletResponse response) throws IOException {
+        double probability = migrationPercent / 100.0;
+        double current = Math.random();
+        String url = current < probability ? moviesUrl : monolithUrl;
+        url += "/api/movies";
+        logger.info("url={} current={}", url, current);
+        String result = restTemplate.getForObject(url, String.class);
+        logger.info("result = {}", result);
+        return result;
     }
 }
