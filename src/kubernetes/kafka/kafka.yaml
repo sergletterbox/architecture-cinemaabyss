@@ -69,7 +69,7 @@ spec:
           value: "2000"
         volumeMounts:
         - name: zookeeper-data
-          mountPath: /var/lib/zookeeper/data
+          mountPath: /opt/zookeeper-3.4.13/data
         readinessProbe:
           tcpSocket:
             port: 2181
@@ -127,9 +127,24 @@ spec:
       labels:
         app: kafka
     spec:
+      initContainers:
+        - name: kafka-init
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              echo "Cleaning up old Kafka data to prevent cluster ID conflicts..."
+              rm -rf /kafka/kafka-logs/meta.properties
+              rm -rf /kafka/kafka-logs/recovery-point-offset-checkpoint
+              rm -rf /kafka/kafka-logs/replication-offset-checkpoint
+              echo "Initialization complete"
+          volumeMounts:
+            - name: kafka-data
+              mountPath: /kafka
       containers:
       - name: kafka
-        image: wurstmeister/kafka:2.13-2.7.0
+        image: wurstmeister/kafka:2.13-2.8.1
         ports:
         - containerPort: 9092
           name: kafka
@@ -157,19 +172,35 @@ spec:
           value: "1"
         - name: KAFKA_LOG_DIRS
           value: "/kafka/kafka-logs"
+        - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+          value: "1"
+        - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+          value: "1"
+        - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+          value: "1"
+        - name: KAFKA_LOG_RETENTION_HOURS
+          value: "168"
+        - name: KAFKA_LOG_SEGMENT_BYTES
+          value: "1073741824"
+        - name: KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS
+          value: "300000"
         volumeMounts:
         - name: kafka-data
           mountPath: /kafka
         readinessProbe:
           tcpSocket:
             port: 9092
-          initialDelaySeconds: 15
+          initialDelaySeconds: 30
           periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         livenessProbe:
           tcpSocket:
             port: 9092
           initialDelaySeconds: 60
           periodSeconds: 20
+          timeoutSeconds: 10
+          failureThreshold: 3
       volumes:
       - name: kafka-data
         persistentVolumeClaim:

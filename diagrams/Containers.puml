@@ -1,0 +1,132 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+!define DEVICONS https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/devicons
+!include DEVICONS/react.puml
+!include DEVICONS/android.puml
+!include DEVICONS/apple.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Архитектура микросервисов стримингового сервиса "Кинобездна"
+
+Person(user, "Пользователь", "Клиент сервиса")
+
+System_Boundary(clients, "Клиентские приложения") {
+    Container(web_app, "Веб-приложение", "React/Vue.js", "Интерфейс для браузеров")
+    Container(mobile_app, "Мобильное приложение", "React Native/Flutter", "iOS/Android приложение")
+    Container(tv_app, "Smart TV приложение", "Android TV/WebOS", "Приложение для телевизоров")
+}
+
+System_Boundary(gateway_layer, "Gateway Layer") {
+    Container(api_gateway, "API Gateway", "Kong/Nginx", "Единая точка входа, маршрутизация, аутентификация", $sprite="nginx")
+    Container(bff_web, "BFF Web", "Node.js/Go", "Backend for Frontend для веб-клиентов")
+    Container(bff_mobile, "BFF Mobile", "Node.js/Go", "Backend for Frontend для мобильных устройств")
+    Container(bff_tv, "BFF TV", "Node.js/Go", "Backend for Frontend для Smart TV")
+}
+
+System_Boundary(core_services, "Основные микросервисы") {
+    Container(user_service, "User Service", "Go + PostgreSQL", "Управление пользователями, профилями, аутентификация")
+    Container(content_service, "Content Service", "Go + PostgreSQL", "Управление видеоконтентом, метаданными")
+    Container(subscription_service, "Subscription Service", "Go + PostgreSQL", "Управление подписками и тарифами")
+    Container(payment_service, "Payment Service", "Go + PostgreSQL", "Обработка платежей и биллинг")
+    Container(recommendation_service, "Recommendation Service", "Python/Go + Redis", "Персональные рекомендации")
+    Container(rating_service, "Rating Service", "Go + PostgreSQL", "Оценки и отзывы пользователей")
+    Container(playlist_service, "Playlist Service", "Go + PostgreSQL", "Управление плейлистами и избранным")
+    Container(analytics_service, "Analytics Service", "Go + ClickHouse", "Сбор и анализ пользовательской активности")
+}
+
+System_Boundary(integration_services, "Интеграционные сервисы") {
+    Container(notification_service, "Notification Service", "Go + Redis", "Push-уведомления, email, SMS")
+    Container(external_integration, "External Integration Service", "Go", "Интеграция с внешними сервисами лояльности")
+    Container(content_aggregator, "Content Aggregator", "Go", "Агрегация контента из внешних источников")
+}
+
+System_Boundary(infrastructure, "Инфраструктура") {
+    ContainerDb(user_db, "User DB", "PostgreSQL", "База данных пользователей")
+    ContainerDb(content_db, "Content DB", "PostgreSQL", "База данных контента")
+    ContainerDb(subscription_db, "Subscription DB", "PostgreSQL", "База данных подписок")
+    ContainerDb(payment_db, "Payment DB", "PostgreSQL", "База данных платежей")
+    ContainerDb(analytics_db, "Analytics DB", "ClickHouse", "Аналитическая база данных")
+
+    Container(redis_cache, "Redis Cache", "Redis", "Кеширование и сессии")
+    Container(message_queue, "Message Queue", "Apache Kafka/RabbitMQ", "Асинхронная обработка событий")
+    Container(file_storage, "File Storage", "MinIO/AWS S3", "Хранение медиафайлов")
+}
+
+System_Boundary(external_systems, "Внешние системы") {
+    System_Ext(payment_providers, "Платежные провайдеры", "Stripe, PayPal, банковские API")
+    System_Ext(content_providers, "Поставщики контента", "Netflix API, открытые источники")
+    System_Ext(loyalty_services, "Сервисы лояльности", "Программы лояльности партнеров")
+    System_Ext(email_service, "Email Service", "SendGrid, Mailchimp")
+}
+
+System_Boundary(devops, "DevOps Infrastructure") {
+    Container(k8s_cluster, "Kubernetes Cluster", "K8s", "Оркестрация контейнеров")
+    Container(ci_cd, "CI/CD Pipeline", "GitLab CI/Jenkins", "Непрерывная интеграция и доставка")
+    Container(monitoring, "Monitoring", "Prometheus + Grafana", "Мониторинг и алертинг")
+    Container(logging, "Logging", "ELK Stack", "Централизованное логирование")
+}
+
+' Связи клиентов с BFF
+Rel(user, web_app, "Использует", "HTTPS")
+Rel(user, mobile_app, "Использует", "HTTPS")
+Rel(user, tv_app, "Использует", "HTTPS")
+
+Rel(web_app, api_gateway, "API вызовы", "HTTPS/REST")
+Rel(mobile_app, api_gateway, "API вызовы", "HTTPS/REST")
+Rel(tv_app, api_gateway, "API вызовы", "HTTPS/REST")
+
+Rel(api_gateway, bff_web, "Маршрутизирует", "HTTP")
+Rel(api_gateway, bff_mobile, "Маршрутизирует", "HTTP")
+Rel(api_gateway, bff_tv, "Маршрутизирует", "HTTP")
+
+' Связи BFF с микросервисами
+Rel(bff_web, user_service, "Вызывает", "gRPC/HTTP")
+Rel(bff_web, content_service, "Вызывает", "gRPC/HTTP")
+Rel(bff_web, subscription_service, "Вызывает", "gRPC/HTTP")
+Rel(bff_web, recommendation_service, "Вызывает", "gRPC/HTTP")
+
+Rel(bff_mobile, user_service, "Вызывает", "gRPC/HTTP")
+Rel(bff_mobile, content_service, "Вызывает", "gRPC/HTTP")
+Rel(bff_mobile, playlist_service, "Вызывает", "gRPC/HTTP")
+Rel(bff_mobile, rating_service, "Вызывает", "gRPC/HTTP")
+
+Rel(bff_tv, content_service, "Вызывает", "gRPC/HTTP")
+Rel(bff_tv, user_service, "Вызывает", "gRPC/HTTP")
+Rel(bff_tv, recommendation_service, "Вызывает", "gRPC/HTTP")
+
+' Связи микросервисов с базами данных
+Rel(user_service, user_db, "Читает/Записывает", "SQL")
+Rel(content_service, content_db, "Читает/Записывает", "SQL")
+Rel(subscription_service, subscription_db, "Читает/Записывает", "SQL")
+Rel(payment_service, payment_db, "Читает/Записывает", "SQL")
+Rel(analytics_service, analytics_db, "Читает/Записывает", "SQL")
+
+' Связи с кешем и очередью сообщений
+Rel(user_service, redis_cache, "Кеширует", "Redis Protocol")
+Rel(content_service, redis_cache, "Кеширует", "Redis Protocol")
+Rel(recommendation_service, redis_cache, "Кеширует", "Redis Protocol")
+
+Rel(payment_service, message_queue, "Публикует события", "AMQP/Kafka")
+Rel(subscription_service, message_queue, "Публикует события", "AMQP/Kafka")
+Rel(notification_service, message_queue, "Подписывается на события", "AMQP/Kafka")
+Rel(analytics_service, message_queue, "Подписывается на события", "AMQP/Kafka")
+
+' Связи с внешними системами
+Rel(payment_service, payment_providers, "Интегрируется", "REST API")
+Rel(content_aggregator, content_providers, "Агрегирует контент", "REST API")
+Rel(external_integration, loyalty_services, "Интегрируется", "REST API")
+Rel(notification_service, email_service, "Отправляет уведомления", "REST API")
+
+' Связи с файловым хранилищем
+Rel(content_service, file_storage, "Хранит медиафайлы", "S3 API")
+
+' Межсервисные связи
+Rel(subscription_service, user_service, "Проверяет пользователя", "gRPC")
+Rel(payment_service, subscription_service, "Обновляет подписку", "Event/gRPC")
+Rel(recommendation_service, content_service, "Получает метаданные", "gRPC")
+Rel(recommendation_service, rating_service, "Получает оценки", "gRPC")
+Rel(analytics_service, user_service, "Анализирует активность", "Event")
+
+@enduml
